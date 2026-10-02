@@ -1045,14 +1045,22 @@ class ObjectSpaceRepository : public ObjectSpace, public ObjectRepository {
   float computeMaxMagnitude(NGT::ObjectID beginID = 1) {
     float maxMag          = 0.0;
     ObjectRepository &rep = *this;
+#if defined(_WIN32) && !defined(_OPENMP)
+    auto nOfThreads       = 1;
+#else
     auto nOfThreads       = omp_get_max_threads();
+#endif
     std::vector<float> maxm(nOfThreads, 0.0);
 #pragma omp parallel for
     for (size_t idx = beginID; idx < rep.size(); idx++) {
       if (rep[idx] == 0) {
         continue;
       }
+#if defined(_WIN32) && !defined(_OPENMP)
+      auto thdID = 0;
+#else
       auto thdID = omp_get_thread_num();
+#endif
 #ifdef NGT_SHARED_MEMORY_ALLOCATOR
       auto object = getObject(*rep[idx], allocator);
 #else

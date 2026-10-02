@@ -26,8 +26,12 @@
 #include <unordered_set>
 #include <thread>
 
+#ifndef _WIN32
 #include <sys/time.h>
 #include <sys/stat.h>
+#else
+#include <direct.h>
+#endif
 #include <stdint.h>
 
 #include "NGT/defines.h"
@@ -556,7 +560,11 @@ class Index {
   void save(const std::string &indexPath) { saveIndex(indexPath); }
 #endif
   static void mkdir(const std::string &dir) {
+#ifdef _WIN32
+    if (::_mkdir(dir.c_str()) != 0) {
+#else
     if (::mkdir(dir.c_str(), S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH) != 0) {
+#endif
       std::stringstream msg;
       msg << "NGT::Index::mkdir: Cannot make the specified directory. " << dir;
       NGTThrowException(msg);

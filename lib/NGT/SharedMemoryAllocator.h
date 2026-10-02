@@ -17,9 +17,13 @@
 #pragma once
 
 #include "NGT/defines.h"
+#ifndef _WIN32
 #include "NGT/MmapManager.h"
+#endif
 
+#ifndef _WIN32
 #include <unistd.h>
+#endif
 #include <cstdlib>
 #include <cstring>
 #include <string>
@@ -28,7 +32,9 @@
 #include <exception>
 #include <cassert>
 
+#ifndef _WIN32
 #define MMAP_MANAGER
+#endif
 
 ///////////////////////////////////////////////////////////////////////
 class SharedMemoryAllocator {
@@ -166,6 +172,8 @@ class SharedMemoryAllocator {
     assert(oft > 0);
 #if defined(MMAP_MANAGER) && !defined(NOT_USE_MMAP_ALLOCATOR)
     return mmanager->getAbsAddr(oft);
+#elif defined(_WIN32)
+    return reinterpret_cast<void *>(static_cast<uintptr_t>(oft));
 #else
     return (void *)oft;
 #endif
@@ -176,21 +184,29 @@ class SharedMemoryAllocator {
     }
 #if defined(MMAP_MANAGER) && !defined(NOT_USE_MMAP_ALLOCATOR)
     return mmanager->getRelAddr(adr);
+#elif defined(_WIN32)
+    return static_cast<off_t>(reinterpret_cast<uintptr_t>(adr));
 #else
     return (off_t)adr;
 #endif
   }
   size_t getMemorySize(GetMemorySizeType t) {
+#ifdef MMAP_MANAGER
     switch (t) {
     case GetTotalMemorySize: return getTotalSize();
     case GetAllocatedMemorySize: return getAllocatedSize();
     case GetFreedMemorySize: return getFreedSize();
     }
     return getTotalSize();
+#else
+    return 0;
+#endif
   }
+#ifdef MMAP_MANAGER
   size_t getTotalSize() { return mmanager->getTotalSize(); }
   size_t getAllocatedSize() { return mmanager->getUseSize(); }
   size_t getFreedSize() { return mmanager->getFreeSize(); }
+#endif
 
   bool isValid;
   std::string file;
