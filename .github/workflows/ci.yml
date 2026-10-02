@@ -87,6 +87,11 @@ jobs:
       run: |
         set -e
         ./build-windows/bin/ngt/ngt.exe create -d 128 -o c build-windows/sift-index data/sift-dataset-5k.tsv
+        # Unix readers require LF line endings in the property file.
+        if LC_ALL=C grep -Uq $'\r' build-windows/sift-index/prf; then
+          echo "The property file contains CRLF line endings."
+          exit 1
+        fi
         ./build-windows/bin/ngt/ngt.exe search -n 3 build-windows/sift-index data/sift-query-3.tsv > build-windows/search.txt
         test "$(grep -c 'Query No.' build-windows/search.txt)" -eq 3
         test "$(grep -Ec '^[123][[:space:]]+[0-9]+[[:space:]]+[0-9]+([.][0-9]+)?([eE][-+]?[0-9]+)?[[:space:]]*$' build-windows/search.txt)" -eq 9

@@ -1208,7 +1208,12 @@ class PropertySet : public std::map<std::string, std::string> {
     load(st);
   }
   void save(const std::string &f) {
+#ifdef _WIN32
+    // Keep property files readable on Unix by preserving LF line endings.
+    std::ofstream st(f, std::ios::binary);
+#else
     std::ofstream st(f);
+#endif
     if (!st) {
       std::stringstream msg;
       msg << "PropertySet::save: Cannot save. " << f << std::endl;
