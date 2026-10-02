@@ -1535,7 +1535,11 @@ class DistanceCheckedSet : public unordered_set<ObjectID> {
 
 #ifdef NGT_GRAPH_READ_ONLY_GRAPH
   void loadSearchGraph(const std::string &database) {
+#ifdef _WIN32
+    std::ifstream isg(database + "/grp", std::ios::binary);
+#else
     std::ifstream isg(database + "/grp");
+#endif
     NeighborhoodGraph::searchRepository.deserialize(isg, NeighborhoodGraph::getObjectRepository());
   }
 #endif

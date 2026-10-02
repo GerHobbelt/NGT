@@ -1233,7 +1233,11 @@ void NGT::GraphIndex::constructObjectSpace(NGT::Property &prop) {
 }
 
 void NGT::GraphIndex::loadGraph(const string &ifile, NGT::GraphRepository &graph) {
+#ifdef _WIN32
+  ifstream isg(ifile + "/grp", std::ios::binary);
+#else
   ifstream isg(ifile + "/grp");
+#endif
   graph.deserialize(isg);
 }
 

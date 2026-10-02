@@ -1082,7 +1082,11 @@ class GraphIndex : public Index, public NeighborhoodGraph {
   void saveGraph(const std::string &ofile) {
 #ifndef NGT_SHARED_MEMORY_ALLOCATOR
     std::string fname = ofile + "/grp";
+#ifdef _WIN32
+    std::ofstream osg(fname, std::ios::binary);
+#else
     std::ofstream osg(fname);
+#endif
     if (!osg.is_open()) {
       std::stringstream msg;
       msg << "saveIndex:: Cannot open. " << fname;
@@ -1902,7 +1906,11 @@ class GraphAndTreeIndex : public GraphIndex, public DVPTree {
     GraphIndex::saveIndex(ofile);
 #ifndef NGT_SHARED_MEMORY_ALLOCATOR
     std::string fname = ofile + "/tre";
+#ifdef _WIN32
+    std::ofstream ost(fname, std::ios::binary);
+#else
     std::ofstream ost(fname);
+#endif
     if (!ost.is_open()) {
       std::stringstream msg;
       msg << "saveIndex:: Cannot open. " << fname;
@@ -1914,7 +1922,11 @@ class GraphAndTreeIndex : public GraphIndex, public DVPTree {
 
   void loadIndex(const std::string &ifile, bool readOnly) {
     DVPTree::objectSpace = GraphIndex::objectSpace;
+#ifdef _WIN32
+    std::ifstream ist(ifile + "/tre", std::ios::binary);
+#else
     std::ifstream ist(ifile + "/tre");
+#endif
     DVPTree::deserialize(ist);
 #ifdef NGT_GRAPH_READ_ONLY_GRAPH
     if (property.objectAlignment == NGT::Index::Property::ObjectAlignmentTrue) {

@@ -41,7 +41,11 @@ class ObjectRepository : public Repository<Object> {
   }
 
   void serialize(const std::string &ofile, ObjectSpace *ospace) {
+#ifdef _WIN32
+    std::ofstream objs(ofile, std::ios::binary);
+#else
     std::ofstream objs(ofile);
+#endif
     if (!objs.is_open()) {
       std::stringstream msg;
       msg << "NGT::ObjectSpace: Cannot open the specified file " << ofile << ".";
@@ -52,7 +56,11 @@ class ObjectRepository : public Repository<Object> {
 
   void deserialize(const std::string &ifile, ObjectSpace *ospace) {
     assert(ospace != 0);
+#ifdef _WIN32
+    std::ifstream objs(ifile, std::ios::binary);
+#else
     std::ifstream objs(ifile);
+#endif
     if (!objs.is_open()) {
       std::stringstream msg;
       msg << "NGT::ObjectSpace: Cannot open the specified file " << ifile << ".";
