@@ -48,3 +48,45 @@ jobs:
     - run: cmake --install build
 
     - run: install/bin/ngt -d 128 -o c create index data/sift-dataset-5k.tsv
+
+  windows-build-and-test:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        openmp_disabled: ['OFF', 'ON']
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+    - name: Check out code
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+    - name: Set up MinGW
+      uses: msys2/setup-msys2@66cd2cce69caa17b53920067426061ca1de3a884 # v2.32.0
+      with:
+        msystem: UCRT64
+        update: true
+        install: >-
+          mingw-w64-ucrt-x86_64-gcc
+          mingw-w64-ucrt-x86_64-libgomp
+          mingw-w64-ucrt-x86_64-cmake
+          mingw-w64-ucrt-x86_64-ninja
+
+    - name: Configure CMake
+      run: >-
+        cmake -S . -B build-windows -G Ninja
+        -DNGT_QBG_DISABLED=ON
+        -DNGT_OPENMP_DISABLED=${{ matrix.openmp_disabled }}
+        -DNGT_BFLOAT_DISABLED=ON
+        -DNGT_MARCH_NATIVE_DISABLED=ON
+
+    - name: Build
+      run: cmake --build build-windows --parallel 2
+
+    - name: Create and search SIFT index
+      run: |
+        set -e
+        ./build-windows/bin/ngt/ngt.exe create -d 128 -o c build-windows/sift-index data/sift-dataset-5k.tsv
+        ./build-windows/bin/ngt/ngt.exe search -n 3 build-windows/sift-index data/sift-query-3.tsv > build-windows/search.txt
+        test "$(grep -c 'Query No.' build-windows/search.txt)" -eq 3
+        test "$(grep -Ec '^[123][[:space:]]+[0-9]+[[:space:]]+[0-9]+([.][0-9]+)?([eE][-+]?[0-9]+)?[[:space:]]*$' build-windows/search.txt)" -eq 9
