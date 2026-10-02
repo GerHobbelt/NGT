@@ -137,3 +137,38 @@ if(${UNIX})
     add_subdirectory("${PROJECT_SOURCE_DIR}/bin")
     add_subdirectory("${PROJECT_SOURCE_DIR}/samples")
 endif(${UNIX})
+
+# --- Windows build support (MinGW-w64 / MSYS2 UCRT64) ---
+if(WIN32)
+    set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+    set(NGT_FOREST OFF)
+    set(CMAKE_CXX_STANDARD 17)
+    set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+    if (CMAKE_BUILD_TYPE_LOWER STREQUAL "release")
+        set(CMAKE_CXX_FLAGS_RELEASE "")
+        if(${NGT_MARCH_NATIVE_DISABLED})
+            message(STATUS "Compile option -march=native is disabled.")
+            add_compile_options(-O2 -DNDEBUG)
+        else()
+            add_compile_options(-O3 -ffast-math -march=native -DNDEBUG)
+        endif()
+    endif()
+    add_compile_options(-Wall -Wno-overloaded-virtual)
+
+    if(${NGT_OPENMP_DISABLED})
+        message(STATUS "OpenMP is disabled.")
+    else()
+        find_package(OpenMP REQUIRED)
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+    endif()
+
+    find_package(Threads REQUIRED)
+
+    if(${NGT_BFLOAT_DISABLED})
+        message(STATUS "bfloat is disabled.")
+    endif()
+
+    add_subdirectory("${PROJECT_SOURCE_DIR}/lib")
+    add_subdirectory("${PROJECT_SOURCE_DIR}/bin")
+endif()
