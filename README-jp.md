@@ -2,9 +2,11 @@
 <img src="./assets/logo.svg" width="50%">
 </div>
 
-Neighborhood Graph and Tree for Indexing High-dimensional Data
+Neighborhood Graph and Tree for Indexing High-dimensional Data   
 
-[トップ](/README-jp.md) / [インストール](/README-jp.md#インストール) / [コマンド](/bin/ngt/README-jp.md) / [ライセンス](/README-jp.md#ライセンス) / [関連文献](/README-jp.md#関連文献) / [About Us](http://research-lab.yahoo.co.jp/) / [English](/README.md)
+Supported by <a href="https://www.sakura.ad.jp/corporate/"><img src="./assets/3-1-1line-30th-rgb-whiteback.svg" width="50%"></a>
+
+[トップ](/README-jp.md) / [インストール](/README-jp.md#インストール) / [コマンド](/bin/ngt/README-jp.md) / [ライセンス](/README-jp.md#ライセンス) / [関連文献](/README-jp.md#関連文献) / [English](/README.md)
 
 大量（数百万から数千万）の高次元ベクトルデータ（数十～数千次元）に対して高速な近似近傍検索を可能とするコマンド及びライブラリを提供します。
 
@@ -13,11 +15,11 @@ Neighborhood Graph and Tree for Indexing High-dimensional Data
 - 05/26/2025 直積量子化がグラフのデータタイプとして利用可能になりました。 (v2.4.0)
 - 10/29/2024 スカラ量子化がグラフやQBGのデータタイプとして利用可能になりました。(v2.3.0)
 - 2024/04/10 内積が利用可能になりました。(v2.1.0)
-- 2022/08/10 QBG(Quantized Blob Graph)およびQG(NGTQGの改良版)が利用可能となりました。ngtqおよびngtqgは[qbg](https://github.com/yahoojapan/NGT/blob/main/bin/qbg/README.md)で置き換えられました。
+- 2022/08/10 QBG(Quantized Blob Graph)およびQG(NGTQGの改良版)が利用可能となりました。ngtqおよびngtqgは[qbg](https://github.com/NGT-labs/NGT/blob/main/bin/qbg/README.md)で置き換えられました。
 - 2022/02/04 FP16(半精度浮動小数点)が利用可能になりました。(v1.14.0)
 - 2021/03/12 READMEに量子化グラフの結果を追加しました。
 - 2021/01/15 [量子化グラフ (NGTQG)](bin/ngtqg/README.md)を実装した NGT v1.13.0 をリリースしました。
-- 2019/11/04 [NGT チュートリアル](https://github.com/yahoojapan/NGT/wiki) をリリースしました。
+- 2019/11/04 [NGT チュートリアル](https://github.com/NGT-labs/NGT/wiki) をリリースしました。
 - 2019/06/26 Jaccard距離が利用可能になりました。(v1.7.6)
 - 2019/06/10 PyPI NGT パッケージ v1.7.5 が利用可能になりました。
 - 2019/01/17 Python NGTはPYPIからpipでインストールが可能になりました。(v1.5.1)
@@ -38,7 +40,7 @@ Neighborhood Graph and Tree for Indexing High-dimensional Data
 
 ### ダウンロード
 
-- [Releases](https://github.com/yahoojapan/NGT/releases)
+- [Releases](https://github.com/NGT-labs/NGT/releases)
 
 ### ビルド
 
@@ -113,7 +115,7 @@ NGT (Graph and tree-based method)
 ドキュメント
 -----------
 
-- [NGT チュートリアル](https://github.com/yahoojapan/NGT/wiki)
+- [NGT チュートリアル](https://github.com/NGT-labs/NGT/wiki/ホーム)
 
 
 ユーティリティ

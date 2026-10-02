@@ -2,22 +2,24 @@
 <img src="./assets/logo.svg" width="50%">
 </div>
 
-Neighborhood Graph and Tree for Indexing High-dimensional Data
+Neighborhood Graph and Tree for Indexing High-dimensional Data   
 
-[Home](/README.md) / [Installation](/README.md#Installation) / [Command](/bin/ngt/README.md#command) / [License](/README.md#license) / [Publications](/README.md#publications) / [About Us](http://research-lab.yahoo.co.jp/en/) / [日本語](/README-jp.md)
+Supported by <a href="https://www.sakura.ad.jp/corporate/en/"><img src="./assets/3-1-1line-30th-rgb-whiteback.svg" width="50%"></a>
 
-**NGT** provides commands and a library for performing high-speed approximate nearest neighbor searches against a large volume of data in high dimensional vector data space (several ten to several thousand dimensions).
+[Home](/README.md) / [Installation](/README.md#Installation) / [Command](/bin/ngt/README.md#command) / [License](/README.md#license) / [Publications](/README.md#publications) / [日本語](/README-jp.md)
+
+**NGT** provides commands and a library for performing high-speed approximate nearest neighbor searches against a large volume of data in high-dimensional vector spaces (several tens to several thousand dimensions).
 
 News
 ----
 - 05/26/2025 Product quantization is now available as a data type for graph indices. (v2.4.0)
 - 10/29/2024 Scalar quantization is now available as a data type for graph indices and QBG. (v2.3.0)
 - 04/10/2024 Inner product (or dot product) is now available. (v2.1.0)
-- 08/10/2022 [QBG](https://github.com/yahoojapan/NGT#qbg-quantized-blob-graph-based-method) (Quantized Blob Graph) and [QG](https://github.com/yahoojapan/NGT#qg-quantized-graph-based-method) (renewed NGTQG) are now available. The command-line interface ngtq and ngtqg are now obsolete by replacing [qbg](bin/qbg/README.md). (v2.0.0)
+- 08/10/2022 [QBG](https://github.com/NGT-labs/NGT#qbg-quantized-blob-graph-based-method) (Quantized Blob Graph) and [QG](https://github.com/NGT-labs/NGT#qg-quantized-graph-based-method) (renewed NGTQG) are now available. The command-line interface ngtq and ngtqg are now obsolete by replacing [qbg](bin/qbg/README.md). (v2.0.0)
 - 02/04/2022 FP16 (half-precision floating point) is now available. (v1.14.0)
 - 03/12/2021 The results for the quantized graph are added to this README.
 - 01/15/2021 NGT v1.13.0 to provide the [quantized graph (NGTQG)](bin/ngtqg/README.md) is released.
-- 11/04/2019 [NGT tutorial](https://github.com/yahoojapan/NGT/wiki) has been released.
+- 11/04/2019 [NGT tutorial](https://github.com/NGT-labs/NGT/wiki) has been released.
 - 06/26/2019 Jaccard distance is available. (v1.7.6)
 - 06/10/2019 PyPI NGT package v1.7.5 is now available.
 - 01/17/2019 Python NGT can be installed via pip from PyPI. (v1.5.1)
@@ -40,7 +42,7 @@ Installation
 
 #### Downloads
 
-- [Releases](https://github.com/yahoojapan/NGT/releases)
+- [Releases](https://github.com/NGT-labs/NGT/releases)
 
 #### On Linux without QG and QBG
 
@@ -113,7 +115,7 @@ Key Features
 Documents
 ---------
 
-- [NGT tutorial](https://github.com/yahoojapan/NGT/wiki)
+- [NGT tutorial](https://github.com/NGT-labs/NGT/wiki)
 
 Utilities
 ---------
