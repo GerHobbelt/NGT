@@ -1045,7 +1045,7 @@ class ObjectSpaceRepository : public ObjectSpace, public ObjectRepository {
   float computeMaxMagnitude(NGT::ObjectID beginID = 1) {
     float maxMag          = 0.0;
     ObjectRepository &rep = *this;
-#if defined(_WIN32) && !defined(_OPENMP)
+#ifndef _OPENMP
     auto nOfThreads       = 1;
 #else
     auto nOfThreads       = omp_get_max_threads();
@@ -1056,7 +1056,7 @@ class ObjectSpaceRepository : public ObjectSpace, public ObjectRepository {
       if (rep[idx] == 0) {
         continue;
       }
-#if defined(_WIN32) && !defined(_OPENMP)
+#ifndef _OPENMP
       auto thdID = 0;
 #else
       auto thdID = omp_get_thread_num();

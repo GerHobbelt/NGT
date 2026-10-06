@@ -49,6 +49,33 @@ jobs:
 
     - run: install/bin/ngt -d 128 -o c create index data/sift-dataset-5k.tsv
 
+  linux-core-openmp-disabled:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check out code
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+    - name: Install build dependencies
+      run: sudo apt-get install -y cmake
+
+    - name: Configure core without OpenMP
+      run: >-
+        cmake -S . -B build-core-no-openmp
+        -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+        -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+        -DNGT_OPENMP_DISABLED=ON
+        -DNGT_QBG_DISABLED=ON
+        -DNGT_BFLOAT_DISABLED=ON
+
+    - name: Build core without OpenMP
+      run: |
+        set -euo pipefail
+        if grep -q -- '-fopenmp' build-core-no-openmp/compile_commands.json; then
+          echo "OpenMP compilation is unexpectedly enabled."
+          exit 1
+        fi
+        cmake --build build-core-no-openmp --parallel 2
+
   windows-build-and-test:
     runs-on: windows-latest
     strategy:

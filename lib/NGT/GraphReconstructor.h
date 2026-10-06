@@ -451,7 +451,7 @@ class GraphReconstructor {
 
     std::cerr << "vm size(2)=" << NGT::Common::getProcessVmSizeStr() << ":"
               << NGT::Common::getProcessVmPeakStr() << std::endl;
-#if defined(_WIN32) && !defined(_OPENMP)
+#ifndef _OPENMP
     auto nthreads = 1;
 #else
     std::cerr << "# of max threads=" << omp_get_max_threads() << std::endl;

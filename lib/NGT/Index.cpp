@@ -1405,7 +1405,7 @@ void GraphIndex::extractSparseness(InsertionOrder &insertionOrder) {
   }
   auto nOfThreads =
       insertionOrder.nOfThreads == 0 ? std::thread::hardware_concurrency() : insertionOrder.nOfThreads;
-#if defined(_WIN32) && !defined(_OPENMP)
+#ifndef _OPENMP
   nOfThreads = 1;
 #endif
   NGT::Timer timer;
@@ -1422,7 +1422,7 @@ void GraphIndex::extractSparseness(InsertionOrder &insertionOrder) {
     NGTThrowException(msg);
   }
 
-#if !defined(_WIN32) || defined(_OPENMP)
+#ifdef _OPENMP
   omp_set_num_threads(nOfThreads);
 #endif
 
@@ -1436,7 +1436,7 @@ void GraphIndex::extractSparseness(InsertionOrder &insertionOrder) {
   length.resize(getObjectRepositorySize());
 #pragma omp parallel for
   for (NGT::ObjectID query = 1; query < getObjectRepositorySize(); query++) {
-#if defined(_WIN32) && !defined(_OPENMP)
+#ifndef _OPENMP
     auto thdID = 0;
 #else
     auto thdID = omp_get_thread_num();
