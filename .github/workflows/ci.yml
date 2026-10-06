@@ -94,6 +94,7 @@ jobs:
         msystem: UCRT64
         update: true
         install: >-
+          git
           mingw-w64-ucrt-x86_64-gcc
           mingw-w64-ucrt-x86_64-libgomp
           mingw-w64-ucrt-x86_64-cmake
@@ -109,6 +110,80 @@ jobs:
 
     - name: Build
       run: cmake --build build-windows --parallel 2
+
+    - name: Check version generation without Git metadata
+      run: |
+        set -euo pipefail
+        smoke_dir=$(mktemp -d)
+        archive="$smoke_dir/source archive"
+        header="$smoke_dir/output directory/version_defs.h"
+        mkdir -p "$archive"
+        cp VERSION "$archive/VERSION"
+        actual_git=$(sed -n 's/^GIT_EXECUTABLE:FILEPATH=//p' build-windows/CMakeCache.txt)
+        test -n "$actual_git"
+        for git_executable in '' 'GIT_EXECUTABLE-NOTFOUND' "$smoke_dir/missing git.exe" "$actual_git"; do
+          cmake "-DGIT_EXECUTABLE=$git_executable" "-DNGT_SOURCE_DIR=$archive" \
+            "-DNGT_VERSION_DEFS=$header" -P utils/mk_version_defs_h.cmake
+          version=$(sed -nE 's/^#define[[:space:]]+NGT_VERSION[[:space:]]+"([^"]*)".*$/\1/p' "$header")
+          test "$version" = "$(cat VERSION)"
+          grep -Eq '^#define[[:space:]]+NGT_BUILD_DATE[[:space:]]+"[^"]+"' "$header"
+          if grep -Eq '^#define[[:space:]]+NGT_GIT_(HASH|DATE|TAG)' "$header"; then
+            echo "Unavailable Git metadata was unexpectedly emitted."
+            exit 1
+          fi
+        done
+        # A repository without tags still supplies its hash and commit date.
+        git -C "$archive" init -q
+        git -C "$archive" -c user.name=ci -c user.email=ci@example.com \
+          commit --allow-empty -qm "test repository without tags"
+        cmake "-DGIT_EXECUTABLE=$actual_git" "-DNGT_SOURCE_DIR=$archive" \
+          "-DNGT_VERSION_DEFS=$header" -P utils/mk_version_defs_h.cmake
+        hash=$(sed -nE 's/^#define[[:space:]]+NGT_GIT_HASH[[:space:]]+"([^"]*)".*$/\1/p' "$header")
+        test -n "$hash"
+        test "$hash" = "$(git -C "$archive" rev-parse HEAD)"
+        grep -Eq '^#define[[:space:]]+NGT_GIT_DATE[[:space:]]+"[^"]+"' "$header"
+        if grep -Eq '^#define[[:space:]]+NGT_GIT_TAG' "$header"; then
+          echo "A Git tag was unexpectedly emitted for an untagged repository."
+          exit 1
+        fi
+
+    - name: Check build-time version metadata refresh
+      run: |
+        set -euo pipefail
+        header=build-windows/lib/NGT/version_defs.h
+        read_macro() {
+          sed -nE "s/^#define[[:space:]]+$1[[:space:]]+\"([^\"]*)\".*$/\1/p" "$header"
+        }
+        first_head=$(git rev-parse HEAD)
+        first_hash=$(read_macro NGT_GIT_HASH)
+        first_date=$(read_macro NGT_BUILD_DATE)
+        test -n "$first_head"
+        test -n "$first_hash"
+        test -n "$first_date"
+        test "$first_hash" = "$first_head"
+        printf 'First hash: %s\nFirst build date: %s\n' "$first_hash" "$first_date"
+        sleep 2
+        git -c user.name=ci -c user.email=ci@example.com \
+          commit --allow-empty -m "test version metadata refresh"
+        second_head=$(git rev-parse HEAD)
+        test -n "$second_head"
+        test "$second_head" != "$first_head"
+        cmake --build build-windows --parallel 2 --verbose 2>&1 | tee build-windows/version-refresh-build.log
+        second_hash=$(read_macro NGT_GIT_HASH)
+        second_date=$(read_macro NGT_BUILD_DATE)
+        test -n "$second_hash"
+        test -n "$second_date"
+        test "$second_hash" = "$second_head"
+        test "$second_hash" != "$first_hash"
+        test "$second_date" != "$first_date"
+        printf 'Second hash: %s\nSecond build date: %s\n' "$second_hash" "$second_date"
+        if grep -Ei 'Re-running CMake|-- Configuring done|-- Generating done' build-windows/version-refresh-build.log; then
+          echo "Unexpected CMake reconfiguration during metadata refresh."
+          exit 1
+        fi
+        grep -E ' -c .*Version[.]cpp' build-windows/version-refresh-build.log
+        grep -E ' -c .*ngt[.]cpp' build-windows/version-refresh-build.log
+        grep -E ' -o .*ngt[.]exe' build-windows/version-refresh-build.log
 
     - name: Create and search SIFT index
       run: |
