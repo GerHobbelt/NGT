@@ -48,3 +48,152 @@ jobs:
     - run: cmake --install build
 
     - run: install/bin/ngt -d 128 -o c create index data/sift-dataset-5k.tsv
+
+  linux-core-openmp-disabled:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check out code
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+    - name: Install build dependencies
+      run: sudo apt-get install -y cmake
+
+    - name: Configure core without OpenMP
+      run: >-
+        cmake -S . -B build-core-no-openmp
+        -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+        -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+        -DNGT_OPENMP_DISABLED=ON
+        -DNGT_QBG_DISABLED=ON
+        -DNGT_BFLOAT_DISABLED=ON
+
+    - name: Build core without OpenMP
+      run: |
+        set -euo pipefail
+        if grep -q -- '-fopenmp' build-core-no-openmp/compile_commands.json; then
+          echo "OpenMP compilation is unexpectedly enabled."
+          exit 1
+        fi
+        cmake --build build-core-no-openmp --parallel 2
+
+  windows-build-and-test:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        openmp_disabled: ['OFF', 'ON']
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+    - name: Check out code
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+    - name: Set up MinGW
+      uses: msys2/setup-msys2@66cd2cce69caa17b53920067426061ca1de3a884 # v2.32.0
+      with:
+        msystem: UCRT64
+        update: true
+        install: >-
+          git
+          mingw-w64-ucrt-x86_64-gcc
+          mingw-w64-ucrt-x86_64-libgomp
+          mingw-w64-ucrt-x86_64-cmake
+          mingw-w64-ucrt-x86_64-ninja
+
+    - name: Configure CMake
+      run: >-
+        cmake -S . -B build-windows -G Ninja
+        -DNGT_QBG_DISABLED=ON
+        -DNGT_OPENMP_DISABLED=${{ matrix.openmp_disabled }}
+        -DNGT_BFLOAT_DISABLED=ON
+        -DNGT_MARCH_NATIVE_DISABLED=ON
+
+    - name: Build
+      run: cmake --build build-windows --parallel 2
+
+    - name: Check version generation without Git metadata
+      run: |
+        set -euo pipefail
+        smoke_dir=$(mktemp -d)
+        archive="$smoke_dir/source archive"
+        header="$smoke_dir/output directory/version_defs.h"
+        mkdir -p "$archive"
+        cp VERSION "$archive/VERSION"
+        actual_git=$(sed -n 's/^GIT_EXECUTABLE:FILEPATH=//p' build-windows/CMakeCache.txt)
+        test -n "$actual_git"
+        for git_executable in '' 'GIT_EXECUTABLE-NOTFOUND' "$smoke_dir/missing git.exe" "$actual_git"; do
+          cmake "-DGIT_EXECUTABLE=$git_executable" "-DNGT_SOURCE_DIR=$archive" \
+            "-DNGT_VERSION_DEFS=$header" -P utils/mk_version_defs_h.cmake
+          version=$(sed -nE 's/^#define[[:space:]]+NGT_VERSION[[:space:]]+"([^"]*)".*$/\1/p' "$header")
+          test "$version" = "$(cat VERSION)"
+          grep -Eq '^#define[[:space:]]+NGT_BUILD_DATE[[:space:]]+"[^"]+"' "$header"
+          if grep -Eq '^#define[[:space:]]+NGT_GIT_(HASH|DATE|TAG)' "$header"; then
+            echo "Unavailable Git metadata was unexpectedly emitted."
+            exit 1
+          fi
+        done
+        # A repository without tags still supplies its hash and commit date.
+        git -C "$archive" init -q
+        git -C "$archive" -c user.name=ci -c user.email=ci@example.com \
+          commit --allow-empty -qm "test repository without tags"
+        cmake "-DGIT_EXECUTABLE=$actual_git" "-DNGT_SOURCE_DIR=$archive" \
+          "-DNGT_VERSION_DEFS=$header" -P utils/mk_version_defs_h.cmake
+        hash=$(sed -nE 's/^#define[[:space:]]+NGT_GIT_HASH[[:space:]]+"([^"]*)".*$/\1/p' "$header")
+        test -n "$hash"
+        test "$hash" = "$(git -C "$archive" rev-parse HEAD)"
+        grep -Eq '^#define[[:space:]]+NGT_GIT_DATE[[:space:]]+"[^"]+"' "$header"
+        if grep -Eq '^#define[[:space:]]+NGT_GIT_TAG' "$header"; then
+          echo "A Git tag was unexpectedly emitted for an untagged repository."
+          exit 1
+        fi
+
+    - name: Check build-time version metadata refresh
+      run: |
+        set -euo pipefail
+        header=build-windows/lib/NGT/version_defs.h
+        read_macro() {
+          sed -nE "s/^#define[[:space:]]+$1[[:space:]]+\"([^\"]*)\".*$/\1/p" "$header"
+        }
+        first_head=$(git rev-parse HEAD)
+        first_hash=$(read_macro NGT_GIT_HASH)
+        first_date=$(read_macro NGT_BUILD_DATE)
+        test -n "$first_head"
+        test -n "$first_hash"
+        test -n "$first_date"
+        test "$first_hash" = "$first_head"
+        printf 'First hash: %s\nFirst build date: %s\n' "$first_hash" "$first_date"
+        sleep 2
+        git -c user.name=ci -c user.email=ci@example.com \
+          commit --allow-empty -m "test version metadata refresh"
+        second_head=$(git rev-parse HEAD)
+        test -n "$second_head"
+        test "$second_head" != "$first_head"
+        cmake --build build-windows --parallel 2 --verbose 2>&1 | tee build-windows/version-refresh-build.log
+        second_hash=$(read_macro NGT_GIT_HASH)
+        second_date=$(read_macro NGT_BUILD_DATE)
+        test -n "$second_hash"
+        test -n "$second_date"
+        test "$second_hash" = "$second_head"
+        test "$second_hash" != "$first_hash"
+        test "$second_date" != "$first_date"
+        printf 'Second hash: %s\nSecond build date: %s\n' "$second_hash" "$second_date"
+        if grep -Ei 'Re-running CMake|-- Configuring done|-- Generating done' build-windows/version-refresh-build.log; then
+          echo "Unexpected CMake reconfiguration during metadata refresh."
+          exit 1
+        fi
+        grep -E ' -c .*Version[.]cpp' build-windows/version-refresh-build.log
+        grep -E ' -c .*ngt[.]cpp' build-windows/version-refresh-build.log
+        grep -E ' -o .*ngt[.]exe' build-windows/version-refresh-build.log
+
+    - name: Create and search SIFT index
+      run: |
+        set -e
+        ./build-windows/bin/ngt/ngt.exe create -d 128 -o c build-windows/sift-index data/sift-dataset-5k.tsv
+        # Unix readers require LF line endings in the property file.
+        if LC_ALL=C grep -Uq $'\r' build-windows/sift-index/prf; then
+          echo "The property file contains CRLF line endings."
+          exit 1
+        fi
+        ./build-windows/bin/ngt/ngt.exe search -n 3 build-windows/sift-index data/sift-query-3.tsv > build-windows/search.txt
+        test "$(grep -c 'Query No.' build-windows/search.txt)" -eq 3
+        test "$(grep -Ec '^[123][[:space:]]+[0-9]+[[:space:]]+[0-9]+([.][0-9]+)?([eE][-+]?[0-9]+)?[[:space:]]*$' build-windows/search.txt)" -eq 9

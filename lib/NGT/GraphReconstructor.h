@@ -451,11 +451,15 @@ class GraphReconstructor {
 
     std::cerr << "vm size(2)=" << NGT::Common::getProcessVmSizeStr() << ":"
               << NGT::Common::getProcessVmPeakStr() << std::endl;
+#ifndef _OPENMP
+    auto nthreads = 1;
+#else
     std::cerr << "# of max threads=" << omp_get_max_threads() << std::endl;
     if (nOfThreads != 0) {
       omp_set_num_threads(nOfThreads);
     }
     auto nthreads = omp_get_max_threads();
+#endif
     std::cerr << "# of threads=" << nthreads << std::endl;
     removeCount         = 0;
     auto repositorySize = outGraph.repository.size();

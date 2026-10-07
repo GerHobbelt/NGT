@@ -26,8 +26,12 @@
 #include <unordered_set>
 #include <thread>
 
+#ifndef _WIN32
 #include <sys/time.h>
 #include <sys/stat.h>
+#else
+#include <direct.h>
+#endif
 #include <stdint.h>
 
 #include "NGT/defines.h"
@@ -556,7 +560,11 @@ class Index {
   void save(const std::string &indexPath) { saveIndex(indexPath); }
 #endif
   static void mkdir(const std::string &dir) {
+#ifdef _WIN32
+    if (::_mkdir(dir.c_str()) != 0) {
+#else
     if (::mkdir(dir.c_str(), S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH) != 0) {
+#endif
       std::stringstream msg;
       msg << "NGT::Index::mkdir: Cannot make the specified directory. " << dir;
       NGTThrowException(msg);
@@ -1074,7 +1082,11 @@ class GraphIndex : public Index, public NeighborhoodGraph {
   void saveGraph(const std::string &ofile) {
 #ifndef NGT_SHARED_MEMORY_ALLOCATOR
     std::string fname = ofile + "/grp";
+#ifdef _WIN32
+    std::ofstream osg(fname, std::ios::binary);
+#else
     std::ofstream osg(fname);
+#endif
     if (!osg.is_open()) {
       std::stringstream msg;
       msg << "saveIndex:: Cannot open. " << fname;
@@ -1894,7 +1906,11 @@ class GraphAndTreeIndex : public GraphIndex, public DVPTree {
     GraphIndex::saveIndex(ofile);
 #ifndef NGT_SHARED_MEMORY_ALLOCATOR
     std::string fname = ofile + "/tre";
+#ifdef _WIN32
+    std::ofstream ost(fname, std::ios::binary);
+#else
     std::ofstream ost(fname);
+#endif
     if (!ost.is_open()) {
       std::stringstream msg;
       msg << "saveIndex:: Cannot open. " << fname;
@@ -1906,7 +1922,11 @@ class GraphAndTreeIndex : public GraphIndex, public DVPTree {
 
   void loadIndex(const std::string &ifile, bool readOnly) {
     DVPTree::objectSpace = GraphIndex::objectSpace;
+#ifdef _WIN32
+    std::ifstream ist(ifile + "/tre", std::ios::binary);
+#else
     std::ifstream ist(ifile + "/tre");
+#endif
     DVPTree::deserialize(ist);
 #ifdef NGT_GRAPH_READ_ONLY_GRAPH
     if (property.objectAlignment == NGT::Index::Property::ObjectAlignmentTrue) {

@@ -55,3 +55,47 @@ if( ${UNIX} )
 	install(FILES ${HEADER_FILES} ${CMAKE_CURRENT_BINARY_DIR}/defines.h  ${CMAKE_CURRENT_BINARY_DIR}/version_defs.h DESTINATION include/NGT)
 	install(FILES ${NGTQ_HEADER_FILES} DESTINATION include/NGT/NGTQ)
 endif()
+
+# --- Windows build support (MinGW-w64 / MSYS2 UCRT64) ---
+if(WIN32)
+	if(NGT_SHARED_MEMORY_ALLOCATOR)
+		message(FATAL_ERROR "NGT_SHARED_MEMORY_ALLOCATOR is not supported on Windows")
+	endif()
+	option(NGT_SHARED_MEMORY_ALLOCATOR "enable shared memory" OFF)
+	configure_file(${CMAKE_CURRENT_SOURCE_DIR}/defines.h.in ${CMAKE_CURRENT_BINARY_DIR}/defines.h)
+	include_directories("${CMAKE_CURRENT_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/lib" "${PROJECT_BINARY_DIR}/lib/")
+
+	if(${NGT_QBG_DISABLED})
+		file(GLOB NGT_SOURCES *.cpp)
+	else()
+		file(GLOB NGT_SOURCES *.cpp NGTQ/*.cpp)
+	endif()
+	list(REMOVE_ITEM NGT_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/MmapManager.cpp")
+	file(GLOB HEADER_FILES *.h *.hpp)
+	file(GLOB NGTQ_HEADER_FILES NGTQ/*.h NGTQ/*.hpp)
+
+	add_library(ngtstatic STATIC ${NGT_SOURCES})
+	set_target_properties(ngtstatic PROPERTIES COMPILE_FLAGS "-fPIC")
+	target_link_libraries(ngtstatic)
+	if(TARGET OpenMP::OpenMP_CXX)
+		target_link_libraries(ngtstatic OpenMP::OpenMP_CXX)
+	endif()
+
+	find_package(Git QUIET)
+	add_custom_target(versiondef
+		COMMAND "${CMAKE_COMMAND}"
+			"-DGIT_EXECUTABLE=${GIT_EXECUTABLE}"
+			"-DNGT_SOURCE_DIR=${PROJECT_SOURCE_DIR}"
+			"-DNGT_VERSION_DEFS=${CMAKE_CURRENT_BINARY_DIR}/version_defs.h"
+			-P "${PROJECT_SOURCE_DIR}/utils/mk_version_defs_h.cmake"
+		BYPRODUCTS "${CMAKE_CURRENT_BINARY_DIR}/version_defs.h"
+		VERBATIM)
+	add_dependencies(ngtstatic versiondef)
+
+	install(TARGETS ngtstatic
+		RUNTIME DESTINATION bin
+		LIBRARY DESTINATION lib
+		ARCHIVE DESTINATION lib)
+	install(FILES ${HEADER_FILES} ${CMAKE_CURRENT_BINARY_DIR}/defines.h  ${CMAKE_CURRENT_BINARY_DIR}/version_defs.h DESTINATION include/NGT)
+	install(FILES ${NGTQ_HEADER_FILES} DESTINATION include/NGT/NGTQ)
+endif()

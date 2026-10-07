@@ -93,6 +93,22 @@ Installation
       $ make
       $ make install
 
+#### On Windows
+
+Windows support currently targets **MinGW-w64 GCC** (via **MSYS2 / UCRT64**). Native Microsoft Visual C++ (MSVC) is not currently supported and is planned as a future enhancement. `-DNGT_QBG_DISABLED=ON` is required. The standard in-memory index creation and search workflows are supported. Windows builds currently use static linking for the CLI; DLL export annotations and shared memory (memory-mapped file) allocators are not included yet.
+
+To set up the build environment and build using MSYS2 (UCRT64 environment):
+
+      $ pacman -S mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-libgomp mingw-w64-ucrt-x86_64-cmake mingw-w64-ucrt-x86_64-ninja
+      $ cd NGT
+      $ mkdir build
+      $ cd build
+      $ cmake -DNGT_QBG_DISABLED=ON -G Ninja ..
+      $ ninja -j 2
+
+> [!NOTE]
+> Compiling with Link-Time Optimization (LTO) and template instantiations is memory-intensive. Using `ninja -j 2` (or limiting parallel jobs) avoids compiler out-of-memory errors on machines with less than 16 GB of RAM.
+
 ### Pre-Built
 
 #### On macOS
@@ -104,7 +120,7 @@ NGT (Graph and tree-based method)
 
 Key Features
 ------------
-- Supported operating systems: Linux and macOS
+- Supported operating systems: Linux, macOS, and Windows via MinGW-w64/MSYS2
 - Object additional registration and removal are available.
 - Objects beyond the memory size can be handled using [the shared memory (memory mapped file) option](README.md#shared-memory-use).
 - Supported distance functions: L1, L2, Cosine similarity, Angular, Hamming, Jaccard, Poincare, Lorentz, and Inner product

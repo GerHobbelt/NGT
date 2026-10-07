@@ -40,9 +40,15 @@
 #include <type_traits>
 #include <limits>
 
+#ifndef _WIN32
 #include <execinfo.h>
 #include <sys/time.h>
 #include <fcntl.h>
+#else
+#include <io.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+#endif
 #if defined(__linux__)
 #include <sys/sysinfo.h>
 #endif
@@ -763,8 +769,13 @@ class CpuInfo {
 
 class StdOstreamRedirector {
  public:
+#ifdef _WIN32
+  StdOstreamRedirector(bool e = false, const std::string path = "/dev/null",
+                       unsigned int m = 0644, int f = 2) {
+#else
   StdOstreamRedirector(bool e = false, const std::string path = "/dev/null",
                        mode_t m = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH, int f = 2) {
+#endif
     logFilePath = path;
     mode        = m;
     logFD       = -1;
@@ -784,11 +795,19 @@ class StdOstreamRedirector {
     if (!enabled) {
       return;
     }
+#ifdef _WIN32
+    std::string actualPath = logFilePath;
+    if (actualPath == "/dev/null" || actualPath.empty()) {
+      actualPath = "nul";
+    }
+    logFD = _open(actualPath.c_str(), _O_CREAT | _O_WRONLY | _O_APPEND, _S_IREAD | _S_IWRITE);
+#else
     if (logFilePath == "/dev/null") {
       logFD = open(logFilePath.c_str(), O_WRONLY | O_APPEND, mode);
     } else {
       logFD = open(logFilePath.c_str(), O_CREAT | O_WRONLY | O_APPEND, mode);
     }
+#endif
     if (logFD < 0) {
       std::cerr << "Logger: Cannot begin logging." << std::endl;
       logFD = -1;
@@ -812,7 +831,11 @@ class StdOstreamRedirector {
   }
 
   std::string logFilePath;
+#ifdef _WIN32
+  unsigned int mode;
+#else
   mode_t mode;
+#endif
   int logFD;
   int savedFdNo;
   int fdNo;
@@ -1185,7 +1208,12 @@ class PropertySet : public std::map<std::string, std::string> {
     load(st);
   }
   void save(const std::string &f) {
+#ifdef _WIN32
+    // Keep property files readable on Unix by preserving LF line endings.
+    std::ofstream st(f, std::ios::binary);
+#else
     std::ofstream st(f);
+#endif
     if (!st) {
       std::stringstream msg;
       msg << "PropertySet::save: Cannot save. " << f << std::endl;
